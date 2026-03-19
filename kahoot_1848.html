@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kahoot – Pražské červnové povstání 1848</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;900&family=Source+Sans+3:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --dark:    #1a0505;
+    --primary: #8b1a1a;
+    --accent:  #c0392b;
+    --gold:    #c8a951;
+    --light:   #f5ecd7;
+    --white:   #ffffff;
+    --ans-a:   #e74c3c;
+    --ans-b:   #3498db;
+    --ans-c:   #2ecc71;
+    --ans-d:   #f39c12;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Source Sans 3', sans-serif;
+    background: var(--dark);
+    color: var(--white);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  /* Animated background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse 80% 60% at 20% 80%, rgba(139,26,26,0.25) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 40% at 80% 20%, rgba(200,169,81,0.12) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  #app {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 860px;
+    padding: 20px;
+  }
+
+  /* ── SCREEN: Start ─────────────────────────────────────── */
+  #screen-start {
+    text-align: center;
+  }
+
+  .logo-badge {
+    display: inline-block;
+    background: var(--gold);
+    color: var(--dark);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 11px;
+    letter-spacing: 3px;
+    padding: 6px 16px;
+    border-radius: 20px;
+    margin-bottom: 24px;
+    text-transform: uppercase;
+  }
+
+  h1.main-title {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(28px, 5vw, 52px);
+    line-height: 1.1;
+    margin-bottom: 8px;
+  }
+
+  h1.main-title span { color: var(--gold); }
+
+  .subtitle {
+    font-size: 16px;
+    color: rgba(245,236,215,0.7);
+    margin-bottom: 40px;
+  }
+
+  .stat-row {
+    display: flex;
+    gap: 16px;
+    justify-content: center;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+  }
+
+  .stat-pill {
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 50px;
+    padding: 10px 24px;
+    font-size: 14px;
+    color: var(--light);
+  }
+
+  .stat-pill strong { color: var(--gold); }
+
+  .btn-start {
+    background: var(--gold);
+    color: var(--dark);
+    border: none;
+    border-radius: 12px;
+    padding: 18px 60px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 20px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 6px 30px rgba(200,169,81,0.35);
+  }
+
+  .btn-start:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(200,169,81,0.5);
+  }
+
+  /* ── SCREEN: Question ──────────────────────────────────── */
+  #screen-question { display: none; }
+
+  .q-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .q-counter {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 2px;
+    color: rgba(245,236,215,0.5);
+    text-transform: uppercase;
+  }
+
+  .q-score-display {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    color: var(--gold);
+  }
+
+  .progress-bar {
+    width: 100%;
+    height: 4px;
+    background: rgba(255,255,255,0.1);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    background: var(--gold);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* Timer */
+  .timer-ring-wrap {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 20px;
+  }
+
+  .timer-ring {
+    position: relative;
+    width: 70px;
+    height: 70px;
+  }
+
+  .timer-ring svg {
+    transform: rotate(-90deg);
+    position: absolute;
+    top: 0; left: 0;
+  }
+
+  .timer-ring circle {
+    fill: none;
+    stroke-width: 5;
+  }
+
+  .timer-ring .bg { stroke: rgba(255,255,255,0.1); }
+  .timer-ring .fg {
+    stroke: var(--gold);
+    stroke-linecap: round;
+    transition: stroke-dashoffset 1s linear, stroke 0.3s;
+  }
+
+  .timer-number {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 22px;
+    color: var(--white);
+  }
+
+  /* Question box */
+  .q-box {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 28px 32px;
+    text-align: center;
+    margin-bottom: 24px;
+    min-height: 110px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .q-text {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: clamp(16px, 2.5vw, 22px);
+    line-height: 1.35;
+    color: var(--white);
+  }
+
+  /* Answers grid */
+  .answers-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .ans-btn {
+    border: none;
+    border-radius: 12px;
+    padding: 18px 20px;
+    cursor: pointer;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: clamp(13px, 1.8vw, 16px);
+    text-align: left;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: transform 0.12s, filter 0.12s;
+    color: var(--white);
+    line-height: 1.3;
+  }
+
+  .ans-btn:hover:not(:disabled) {
+    transform: scale(1.02);
+    filter: brightness(1.12);
+  }
+
+  .ans-btn:disabled { cursor: default; }
+
+  .ans-btn.a { background: var(--ans-a); }
+  .ans-btn.b { background: var(--ans-b); }
+  .ans-btn.c { background: var(--ans-c); }
+  .ans-btn.d { background: var(--ans-d); }
+
+  .ans-letter {
+    background: rgba(0,0,0,0.2);
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 15px;
+  }
+
+  /* feedback states */
+  .ans-btn.correct {
+    filter: brightness(1.1);
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.6);
+  }
+
+  .ans-btn.wrong {
+    filter: brightness(0.4) saturate(0.3);
+  }
+
+  .ans-btn.reveal-correct {
+    box-shadow: 0 0 0 4px rgba(255,255,255,0.6);
+    filter: brightness(1.1);
+  }
+
+  /* Feedback bar */
+  .feedback-bar {
+    margin-top: 16px;
+    padding: 14px 20px;
+    border-radius: 10px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .feedback-bar.show {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .feedback-bar.ok { background: rgba(46,204,113,0.2); border: 1px solid rgba(46,204,113,0.5); }
+  .feedback-bar.fail { background: rgba(231,76,60,0.2); border: 1px solid rgba(231,76,60,0.4); }
+
+  .feedback-explanation {
+    font-size: 13px;
+    font-weight: 400;
+    color: rgba(245,236,215,0.8);
+    margin-top: 4px;
+    font-family: 'Source Sans 3', sans-serif;
+  }
+
+  .next-btn {
+    margin-top: 16px;
+    width: 100%;
+    background: var(--primary);
+    border: none;
+    border-radius: 10px;
+    padding: 14px;
+    color: var(--white);
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    cursor: pointer;
+    display: none;
+    transition: background 0.2s;
+  }
+
+  .next-btn:hover { background: var(--accent); }
+
+  /* ── SCREEN: Result ────────────────────────────────────── */
+  #screen-result { display: none; text-align: center; }
+
+  .result-medal {
+    font-size: 72px;
+    margin-bottom: 16px;
+    animation: pop 0.5s ease;
+  }
+
+  @keyframes pop {
+    0% { transform: scale(0); opacity: 0; }
+    70% { transform: scale(1.2); }
+    100% { transform: scale(1); opacity: 1; }
+  }
+
+  .result-score-big {
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: clamp(48px, 8vw, 80px);
+    color: var(--gold);
+    line-height: 1;
+    margin-bottom: 8px;
+  }
+
+  .result-label {
+    font-size: 18px;
+    color: rgba(245,236,215,0.7);
+    margin-bottom: 32px;
+  }
+
+  .result-breakdown {
+    background: rgba(255,255,255,0.04);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 20px 24px;
+    margin-bottom: 28px;
+    text-align: left;
+    max-height: 260px;
+    overflow-y: auto;
+  }
+
+  .breakdown-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .breakdown-row:last-child { border-bottom: none; }
+
+  .breakdown-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+
+  .breakdown-q { color: var(--light); flex: 1; }
+
+  .btn-restart {
+    background: var(--gold);
+    color: var(--dark);
+    border: none;
+    border-radius: 12px;
+    padding: 16px 50px;
+    font-family: 'Montserrat', sans-serif;
+    font-weight: 900;
+    font-size: 18px;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(200,169,81,0.35);
+  }
+
+  .btn-restart:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(200,169,81,0.5);
+  }
+
+  /* Screen transitions */
+  .screen { animation: fadeIn 0.35s ease; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 520px) {
+    .answers-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- START SCREEN -->
+  <div id="screen-start" class="screen">
+    <div class="logo-badge">🏆 Kvíz</div>
+    <h1 class="main-title">Pražské červnové<br><span>povstání 1848</span></h1>
+    <p class="subtitle">Otestuj své znalosti z hodiny dějepisu</p>
+    <div class="stat-row">
+      <div class="stat-pill"><strong>12</strong> otázek</div>
+      <div class="stat-pill"><strong>20 s</strong> na otázku</div>
+      <div class="stat-pill"><strong>Max Janda</strong> a<strong> Sam Korčiš</strong></div>
+    </div>
+    <button class="btn-start" onclick="startQuiz()">▶ SPUSTIT KVÍZ</button>
+  </div>
+
+  <!-- QUESTION SCREEN -->
+  <div id="screen-question" class="screen">
+    <div class="q-header">
+      <span class="q-counter" id="q-counter">Otázka 1 / 12</span>
+      <span class="q-score-display">⭐ <span id="score-display">0</span> bodů</span>
+    </div>
+    <div class="progress-bar">
+      <div class="progress-fill" id="progress-fill" style="width:0%"></div>
+    </div>
+    <div class="timer-ring-wrap">
+      <div class="timer-ring">
+        <svg width="70" height="70" viewBox="0 0 70 70">
+          <circle class="bg" cx="35" cy="35" r="30"/>
+          <circle class="fg" id="timer-arc" cx="35" cy="35" r="30"
+            stroke-dasharray="188.5" stroke-dashoffset="0"/>
+        </svg>
+        <div class="timer-number" id="timer-num">20</div>
+      </div>
+    </div>
+    <div class="q-box">
+      <div class="q-text" id="q-text"></div>
+    </div>
+    <div class="answers-grid" id="answers-grid"></div>
+    <div class="feedback-bar" id="feedback-bar">
+      <span id="feedback-icon"></span>
+      <div>
+        <div id="feedback-text"></div>
+        <div class="feedback-explanation" id="feedback-explanation"></div>
+      </div>
+    </div>
+    <button class="next-btn" id="next-btn" onclick="nextQuestion()">Další otázka →</button>
+  </div>
+
+  <!-- RESULT SCREEN -->
+  <div id="screen-result" class="screen">
+    <div class="result-medal" id="result-medal">🏅</div>
+    <div class="result-score-big" id="result-score">0</div>
+    <div class="result-label" id="result-label">z 12 správně</div>
+    <div class="result-breakdown" id="result-breakdown"></div>
+    <button class="btn-restart" onclick="restartQuiz()">🔄 Hrát znovu</button>
+  </div>
+
+</div>
+
+<script>
+const QUESTIONS = [
+  {
+    q: "Kde vypukla revoluce v únoru 1848, která se poté šířila celou Evropou?",
+    opts: ["Vídeň", "Berlín", "Paříž", "Praha"],
+    correct: 2,
+    explanation: "Únorová revoluce 1848 vypukla v Paříži a rychle se rozšířila do Vídně, Berlína, Budapešti a dalších měst."
+  },
+  {
+    q: "Kdo byl předsedou Slovanského sjezdu v Praze v červnu 1848?",
+    opts: ["Karel Havlíček Borovský", "František Palacký", "Josef Václav Frič", "Alfred Windischgrätz"],
+    correct: 1,
+    explanation: "František Palacký, označovaný jako 'Otec národa', předsedal Slovanskému sjezdu. Propagoval austroslavismus – rovnoprávnost národů v rámci Habsburků."
+  },
+  {
+    q: "Kde přesně zahynula kněžna Eleonora Windischgrätzová dne 12. června 1848?",
+    opts: ["Na Malostranském náměstí", "Na Staroměstském náměstí", "V Celetné ulici", "Na Karlově mostě"],
+    correct: 2,
+    explanation: "Kněžna Eleonora stála u okna v Celetné ulici a sledovala nepokoje, když ji zasáhla kulka. Zemřela na místě."
+  },
+  {
+    q: "Z jakých míst Windischgrätz ostřeloval centrum Prahy v červnu 1848?",
+    opts: ["Z Vyšehradu a Žižkova", "Z Petřína, Strahova a Letné", "Z Petřína a Hradčan", "Z Pražského hradu a Letné"],
+    correct: 1,
+    explanation: "Windischgrätz přesunul vojsko na levý břeh Vltavy a zahájil ostřelování Starého Města z Petřína, Strahova a Letné."
+  },
+  {
+    q: "Kolik barikád bylo odhadnuto v centru Prahy během červnového povstání?",
+    opts: ["Asi 30", "Asi 60", "Přes 100", "Přes 200"],
+    correct: 2,
+    explanation: "Odhaduje se přes 100 barikád v centru Prahy, zejména v síti ulic Starého Města."
+  },
+  {
+    q: "Kdy bylo odvoláno stanné právo (stav obležení) v Praze po povstání?",
+    opts: ["17. června 1848", "20. července 1848", "Září 1848", "Března 1849"],
+    correct: 1,
+    explanation: "Stav obležení byl vyhlášen 18. června 1848 a odvolán 20. července 1848."
+  },
+  {
+    q: "Jakou vojenskou hodnost měl Alfred Windischgrätz v roce 1848?",
+    opts: ["Polní maršál", "Generál", "Polní zbrojmistr (Feldzeugmeister)", "Plukovník"],
+    correct: 2,
+    explanation: "V roce 1848 byl Windischgrätz polním zbrojmistrem (Feldzeugmeister). Polním maršálem se stal až roku 1851."
+  },
+  {
+    q: "Který novinář označil červnové povstání za 'předčasné a škodlivé české věci'?",
+    opts: ["František Palacký", "Josef Václav Frič", "Karel Havlíček Borovský", "František Ladislav Rieger"],
+    correct: 2,
+    explanation: "Karel Havlíček Borovský, vydavatel Národních novin, kritizoval jak absolutismus, tak nerealistické plány radikálů. Povstání považoval za předčasné."
+  },
+  {
+    q: "Co bylo hlavní taktikou, proč barikády nakonec padly?",
+    opts: ["Nedostatek zásob a hlad", "Dělostřelecká palba z výšin", "Zrada části povstalců", "Příchod posil z Vídně"],
+    correct: 1,
+    explanation: "Dělostřelecká palba z Petřína, Strahova a Letné ničila domy i uličky. Barikáda nechrání před dělostřelectvem."
+  },
+  {
+    q: "Na jaké hlavní silnici ležely Běchovice v roce 1848?",
+    opts: ["Praha–Drážďany", "Praha–Vídeň", "Praha–Brno", "Praha–Krakov"],
+    correct: 1,
+    explanation: "Běchovice ležely na hlavní císařské silnici Praha–Vídeň, po které v červnu 1848 proudily vojenské posily pro Windischgrätze."
+  },
+  {
+    q: "Závod Běchovice–Praha se koná od roku 1897. Čím je výjimečný v evropském měřítku?",
+    opts: ["Je nejrychlejším závodem v Evropě", "Je nejdelším závodem v Čechách", "Je nejstarším nepřerušeným silničním závodem v Evropě", "Je jediným závodem v Praze"],
+    correct: 2,
+    explanation: "Závod Běchovice–Praha (10 031 m) je nejstarším nepřerušeným silničním závodem v Evropě. Cíl je na Žižkově."
+  },
+  {
+    q: "Kolik povstalců přibližně zahynulo při červnovém povstání v Praze?",
+    opts: ["Asi 10", "Asi 43", "Asi 150", "Přes 300"],
+    correct: 1,
+    explanation: "Odhaduje se přibližně 43 mrtvých povstalců. Stovky dalších bylo zatčeno a vyšetřováno."
+  },
+];
+
+const TIME_LIMIT = 20;
+const CIRCUMFERENCE = 2 * Math.PI * 30; // 188.5
+
+let currentQ = 0;
+let score = 0;
+let answered = false;
+let timerInterval = null;
+let timeLeft = TIME_LIMIT;
+let results = [];
+
+function startQuiz() {
+  currentQ = 0;
+  score = 0;
+  results = [];
+  document.getElementById('screen-start').style.display = 'none';
+  document.getElementById('screen-result').style.display = 'none';
+  document.getElementById('screen-question').style.display = 'block';
+  showQuestion();
+}
+
+function showQuestion() {
+  answered = false;
+  timeLeft = TIME_LIMIT;
+  const q = QUESTIONS[currentQ];
+
+  // Header
+  document.getElementById('q-counter').textContent = `Otázka ${currentQ + 1} / ${QUESTIONS.length}`;
+  document.getElementById('score-display').textContent = score;
+
+  // Progress
+  document.getElementById('progress-fill').style.width = `${(currentQ / QUESTIONS.length) * 100}%`;
+
+  // Question text
+  document.getElementById('q-text').textContent = q.q;
+
+  // Answers
+  const grid = document.getElementById('answers-grid');
+  const labels = ['A', 'B', 'C', 'D'];
+  const classes = ['a', 'b', 'c', 'd'];
+  grid.innerHTML = q.opts.map((opt, i) => `
+    <button class="ans-btn ${classes[i]}" onclick="selectAnswer(${i})">
+      <span class="ans-letter">${labels[i]}</span>
+      <span>${opt}</span>
+    </button>
+  `).join('');
+
+  // Feedback
+  const fb = document.getElementById('feedback-bar');
+  fb.classList.remove('show', 'ok', 'fail');
+
+  // Next button
+  document.getElementById('next-btn').style.display = 'none';
+
+  // Timer
+  startTimer();
+}
+
+function startTimer() {
+  clearInterval(timerInterval);
+  updateTimerArc(TIME_LIMIT);
+  document.getElementById('timer-num').textContent = timeLeft;
+
+  timerInterval = setInterval(() => {
+    timeLeft--;
+    document.getElementById('timer-num').textContent = timeLeft;
+    updateTimerArc(timeLeft);
+
+    // Color shift when low
+    const arc = document.getElementById('timer-arc');
+    if (timeLeft <= 5) arc.style.stroke = '#e74c3c';
+    else arc.style.stroke = 'var(--gold)';
+
+    if (timeLeft <= 0) {
+      clearInterval(timerInterval);
+      if (!answered) timeUp();
+    }
+  }, 1000);
+}
+
+function updateTimerArc(t) {
+  const fraction = t / TIME_LIMIT;
+  const offset = CIRCUMFERENCE * (1 - fraction);
+  document.getElementById('timer-arc').style.strokeDashoffset = offset;
+}
+
+function selectAnswer(idx) {
+  if (answered) return;
+  answered = true;
+  clearInterval(timerInterval);
+
+  const q = QUESTIONS[currentQ];
+  const correct = idx === q.correct;
+  if (correct) score++;
+
+  results.push({ q: q.q, correct, yourIdx: idx, correctIdx: q.correct, opts: q.opts });
+
+  // Style buttons
+  const btns = document.querySelectorAll('.ans-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('reveal-correct');
+    else if (i === idx && !correct) btn.classList.add('wrong');
+    else btn.style.opacity = '0.35';
+  });
+
+  // Feedback bar
+  const fb = document.getElementById('feedback-bar');
+  document.getElementById('feedback-icon').textContent = correct ? '✅' : '❌';
+  document.getElementById('feedback-text').textContent = correct
+    ? `Správně! +1 bod`
+    : `Špatně. Správná odpověď: ${q.opts[q.correct]}`;
+  document.getElementById('feedback-explanation').textContent = q.explanation;
+  fb.className = 'feedback-bar show ' + (correct ? 'ok' : 'fail');
+
+  // Next button
+  document.getElementById('score-display').textContent = score;
+  document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('next-btn').textContent =
+    currentQ + 1 < QUESTIONS.length ? 'Další otázka →' : 'Zobrazit výsledky 🏆';
+}
+
+function timeUp() {
+  answered = true;
+  const q = QUESTIONS[currentQ];
+  results.push({ q: q.q, correct: false, yourIdx: -1, correctIdx: q.correct, opts: q.opts, timeout: true });
+
+  const btns = document.querySelectorAll('.ans-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('reveal-correct');
+    else btn.style.opacity = '0.35';
+  });
+
+  const fb = document.getElementById('feedback-bar');
+  document.getElementById('feedback-icon').textContent = '⏱️';
+  document.getElementById('feedback-text').textContent = `Čas vypršel! Správná odpověď: ${q.opts[q.correct]}`;
+  document.getElementById('feedback-explanation').textContent = q.explanation;
+  fb.className = 'feedback-bar show fail';
+
+  document.getElementById('next-btn').style.display = 'block';
+  document.getElementById('next-btn').textContent =
+    currentQ + 1 < QUESTIONS.length ? 'Další otázka →' : 'Zobrazit výsledky 🏆';
+}
+
+function nextQuestion() {
+  currentQ++;
+  if (currentQ < QUESTIONS.length) {
+    showQuestion();
+  } else {
+    showResult();
+  }
+}
+
+function showResult() {
+  clearInterval(timerInterval);
+  document.getElementById('screen-question').style.display = 'none';
+  document.getElementById('screen-result').style.display = 'block';
+
+  const pct = Math.round((score / QUESTIONS.length) * 100);
+
+  // Medal
+  let medal = '🥉', praise = 'Zkus to znovu!';
+  if (pct === 100) { medal = '🏆'; praise = 'Perfektní výsledek!'; }
+  else if (pct >= 80) { medal = '🥇'; praise = 'Výborně!'; }
+  else if (pct >= 60) { medal = '🥈'; praise = 'Dobrá práce!'; }
+
+  document.getElementById('result-medal').textContent = medal;
+  document.getElementById('result-score').textContent = `${score} / ${QUESTIONS.length}`;
+  document.getElementById('result-label').textContent = `${pct} % správně — ${praise}`;
+
+  // Breakdown
+  const bd = document.getElementById('result-breakdown');
+  bd.innerHTML = results.map((r, i) => `
+    <div class="breakdown-row">
+      <span class="breakdown-icon">${r.correct ? '✅' : '❌'}</span>
+      <div class="breakdown-q">
+        <strong>${i+1}.</strong> ${r.q}<br>
+        ${!r.correct ? `<span style="color:rgba(231,76,60,0.9)">Tvá odpověď: ${r.timeout ? '(čas vypršel)' : r.opts[r.yourIdx]}</span><br>` : ''}
+        <span style="color:rgba(46,204,113,0.9)">✓ ${r.opts[r.correctIdx]}</span>
+      </div>
+    </div>
+  `).join('');
+}
+
+function restartQuiz() {
+  document.getElementById('screen-result').style.display = 'none';
+  document.getElementById('screen-start').style.display = 'block';
+}
+</script>
+</body>
+</html>
